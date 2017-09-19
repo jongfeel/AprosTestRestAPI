@@ -9,11 +9,12 @@ server.documentRoot = "webroot"
 
 var routes = Routes()
 
-routes.add(method: .get, uri: "/", handler: {
-	request, response in
-	response.setBody(string: "Apros RestAPI Test root!").completed()
+func handlerFunc(request: HTTPRequest, response: HTTPResponse) {
+	response.appendBody(string: "Apros RestAPI Test root!").completed()
 	print("Response, /")
-})
+}
+
+routes.add(method: .get, uri: "/", handler: handlerFunc)
 
 server.addRoutes(routes)
 
