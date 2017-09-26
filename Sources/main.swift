@@ -10,7 +10,26 @@ server.documentRoot = "webroot"
 
 let dateFormatter = DateFormatter()
 dateFormatter.locale = Locale.current
-dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+
+func datetimeArray(dateFormat: Calendar.Component, min: Float, max: Float) -> String {
+    var datetimes = ""
+    
+    var component = Calendar.current.component(dateFormat, from: Date())
+    if (dateFormat == Calendar.Component.day) {
+        component -= 1
+    }
+    
+    for c in (0...component).reversed() {
+        dateFormatter.dateFormat = dateFormat == Calendar.Component.day ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss"
+        let interval = dateFormat == Calendar.Component.day ? TimeInterval(-1 * c * 24 * 60 * 60) : TimeInterval(-1 * c * 60 * 60)
+        let formattedDate = dateFormatter.string(from: Date().addingTimeInterval(interval))
+        let value = Float.random(min: min, max: max)
+        datetimes += "\t\t\t{ \"datetime\" : \"\(formattedDate)\", \"value\" : \"\(value)\" }," + "\r\n"
+    }
+    datetimes.remove(at: datetimes.index(datetimes.endIndex, offsetBy: -2))
+
+    return datetimes
+}
 
 var routes = Routes()
 
@@ -23,16 +42,16 @@ routes.add(method: .get, uri: "/", handler: handlerFunc)
 
 routes.add(method: .get, uri: "/Status", handler: {
     request, response in
-        
-    let json : String = "{ " +
-                        "\"Result\" : { " +
-                                        "\"temperature\" : \"%f\", " +
-                                        "\"electricCurrent\" : \"%f\", " +
-                                        "\"oscillation\" : \"%f\", " +
-                                        "\"status\" : \"%d\", " +
-                                        "\"lifeExpect\" : \"%d\"" +
-                                        " }, " +
-                        "\"responseCode\" : \"1\" " +
+    
+    let json : String = "{ " + "\r\n" +
+                        "\t\"Result\" : { " + "\r\n" +
+                                        "\t\t\"temperature\" : \"%f\", " + "\r\n" +
+                                        "\t\t\"electricCurrent\" : \"%f\", " + "\r\n" +
+                                        "\t\t\"oscillation\" : \"%f\", " + "\r\n" +
+                                        "\t\t\"status\" : \"%d\", " + "\r\n" +
+                                        "\t\t\"lifeExpect\" : \"%d\"" + "\r\n" +
+                                        "\t }, " + "\r\n" +
+                        "\t\"responseCode\" : \"1\" " + "\r\n" +
                         "}"
     
     let temperature = Float.random(min: 20.0, max: 40.0)
@@ -43,7 +62,7 @@ routes.add(method: .get, uri: "/Status", handler: {
     
     let formatted = String(format: json, temperature, electricCurrent, oscillation, status, lifeExpect)
     
-    //response.setHeader(.contentType, value: "application/json")
+    response.setHeader(.contentType, value: "application/json")
     response.appendBody(string: formatted).completed()
     print("Response, /Status, \(formatted)")
 })
@@ -51,47 +70,42 @@ routes.add(method: .get, uri: "/Status", handler: {
 routes.add(method: .get, uri: "/Temperature", handler: {
     request, response in
     
-    var day = Calendar.current.component(.day, from: Date())
-    
-    var dailyDatetimes = ""
-    for d in (0...day-1).reversed() {
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let formattedDate = dateFormatter.string(from: Date().addingTimeInterval(TimeInterval(-1 * d * 24 * 60 * 60)))
-        let temperature = Float.random(min: 20.0, max: 40.0)
-        dailyDatetimes += "{ \"datetime\" : \"\(formattedDate)\", \"value\" : \"\(temperature)\" }, "
-    }
-    dailyDatetimes.remove(at: dailyDatetimes.index(dailyDatetimes.endIndex, offsetBy: -2))
-    
-    var hour = Calendar.current.component(.hour, from: Date())
-    
-    var hourlyDatetimes = ""
-    for h in (0...hour).reversed() {
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        let formattedDate = dateFormatter.string(from: Date().addingTimeInterval(TimeInterval(-1 * h * 60 * 60)))
-        let temperature = Float.random(min: 20.0, max: 40.0)
-        hourlyDatetimes += "{ \"datetime\" : \"\(formattedDate)\", \"value\" : \"\(temperature)\" }, "
-    }
-    hourlyDatetimes.remove(at: hourlyDatetimes.index(hourlyDatetimes.endIndex, offsetBy: -2))
-    
-    let json : String = "{ " +
-                            "\"Result\" : { " +
-                                "\"daily\" : [ " +
-                                dailyDatetimes +
-                                "], " +
-                                "\"hourly\" : [ " +
-                                hourlyDatetimes +
-                                "]" +
-                            " }, " +
-                            "\"responseCode\" : \"1\" " +
+    let json : String = "{ " + "\r\n" +
+                            "\t\"Result\" : { " + "\r\n" +
+                                "\t\t\"daily\" : [ " + "\r\n" +
+                                datetimeArray(dateFormat: .day, min: 20.0, max: 40.0) + "\r\n" +
+                                "\t\t], " + "\r\n" +
+                                "\t\t\"hourly\" : [ " + "\r\n" +
+                                datetimeArray(dateFormat: .hour, min: 20.0, max: 40.0) + "\r\n" +
+                                "\t\t]" + "\r\n" +
+                            "\t}, " + "\r\n" +
+                            "\t\"responseCode\" : \"1\" " + "\r\n" +
                         "}"
     
-    let formatted = json
-    
-    //response.setHeader(.contentType, value: "application/json")
-    response.appendBody(string: formatted).completed()
-    print("Response, /Temperature, \(formatted)")
+    response.setHeader(.contentType, value: "application/json")
+    response.appendBody(string: json).completed()
+    print("Response, /Temperature, \(json)")
 })
 
+routes.add(method: .get, uri: "/ElectricCurrent", handler: {
+    request, response in
+    
+    let json : String = "{ " + "\r\n" +
+                            "\t\"Result\" : { " + "\r\n" +
+                                "\t\t\"daily\" : [ " + "\r\n" +
+                                    datetimeArray(dateFormat: .day, min: 1.1, max: 1.2) + "\r\n" +
+                                "\t\t], " + "\r\n" +
+                                "\t\t\"hourly\" : [ " + "\r\n" +
+                                    datetimeArray(dateFormat: .hour, min: 1.1, max: 1.2) + "\r\n" +
+                                "\t\t]" + "\r\n" +
+                            "\t}, " + "\r\n" +
+                            "\t\"responseCode\" : \"1\" " + "\r\n" +
+                        "}"
+    
+    response.setHeader(.contentType, value: "application/json")
+    response.appendBody(string: json).completed()
+    print("Response, /ElectricCurrent, \(json)")
+})
 server.addRoutes(routes)
 
 do {
